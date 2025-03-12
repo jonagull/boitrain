@@ -18,10 +18,20 @@
     let currentExercise = 0;
     let timer: ReturnType<typeof setInterval> | null = null;
     let timeLeft = 0;
+    let workoutTimer: ReturnType<typeof setInterval> | null = null;
+    let workoutDuration = 0;
+    let currentSet = 1;
+    let isResting = false;
+    const REST_TIME = 90; // Rest time in seconds
 
     function startWorkout(workoutDay: any) {
         activeWorkout = workoutDay;
         currentExercise = 0;
+        workoutDuration = 0;
+        workoutTimer = setInterval(() => {
+            workoutDuration++;
+        }, 1000);
+
         if (workoutDay.exercises[0].duration) {
             startTimer(parseDuration(workoutDay.exercises[0].duration));
         }
@@ -44,19 +54,44 @@
         }, 1000);
     }
 
-    function nextExercise() {
-        if (timer) clearInterval(timer);
-        currentExercise++;
-        if (currentExercise < activeWorkout.exercises.length) {
-            const exercise = activeWorkout.exercises[currentExercise];
-            if (exercise.duration) {
-                startTimer(parseDuration(exercise.duration));
+    function startSet() {
+        if (isResting) {
+            // End rest, start next set or move to next exercise
+            isResting = false;
+            if (timer) {
+                clearInterval(timer);
+                timer = null;
+            }
+            if (currentSet > activeWorkout.exercises[currentExercise].sets) {
+                nextExercise();
+            }
+        } else {
+            // Complete set, start rest timer
+            isResting = true;
+            startTimer(REST_TIME);
+            if (currentSet < activeWorkout.exercises[currentExercise].sets) {
+                currentSet++;
+            } else {
+                currentSet = activeWorkout.exercises[currentExercise].sets + 1; // Mark as complete
             }
         }
     }
 
+    function nextExercise() {
+        if (timer) clearInterval(timer);
+        currentExercise++;
+        currentSet = 1;
+        isResting = false;
+    }
+
     function formatTime(seconds: number): string {
         return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")}`;
+    }
+
+    function finishWorkout() {
+        if (workoutTimer) clearInterval(workoutTimer);
+        activeWorkout = null;
+        workoutDuration = 0;
     }
 </script>
 
@@ -115,7 +150,12 @@
     </div>
 {:else}
     <div class="container mx-auto p-4 max-w-4xl">
-        <h1 class="text-3xl font-bold mb-4">{activeWorkout.name}</h1>
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-3xl font-bold">{activeWorkout.name}</h1>
+            <div class="text-xl font-mono">
+                {formatTime(workoutDuration)}
+            </div>
+        </div>
 
         {#if currentExercise < activeWorkout.exercises.length}
             <Card class="mb-6">
@@ -127,16 +167,41 @@
                 </CardHeader>
                 <CardContent>
                     {#if activeWorkout.exercises[currentExercise].sets && activeWorkout.exercises[currentExercise].reps}
-                        <p class="text-lg mb-4">
-                            {activeWorkout.exercises[currentExercise].sets} sets
-                            × {activeWorkout.exercises[currentExercise].reps}
-                        </p>
-                    {/if}
+                        <div class="space-y-4">
+                            <p class="text-lg">
+                                Set {currentSet} of {activeWorkout.exercises[
+                                    currentExercise
+                                ].sets}
+                                × {activeWorkout.exercises[currentExercise]
+                                    .reps} reps
+                            </p>
 
-                    {#if timer}
+                            {#if isResting}
+                                <div class="text-center">
+                                    <div class="text-4xl font-mono mb-2">
+                                        Rest: {formatTime(timeLeft)}
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        class="w-full"
+                                        on:click={startSet}
+                                    >
+                                        Skip Rest
+                                    </Button>
+                                </div>
+                            {:else}
+                                <Button class="w-full" on:click={startSet}>
+                                    Complete Set
+                                </Button>
+                            {/if}
+                        </div>
+                    {:else if activeWorkout.exercises[currentExercise].duration}
                         <div class="text-4xl font-mono text-center mb-4">
                             {formatTime(timeLeft)}
                         </div>
+                        <Button class="w-full" on:click={nextExercise}>
+                            Complete Exercise
+                        </Button>
                     {/if}
 
                     <div class="mt-4">
@@ -148,19 +213,16 @@
                     </div>
                 </CardContent>
             </Card>
-
-            <Button class="w-full" on:click={nextExercise}>
-                Next Exercise
-            </Button>
         {:else}
             <Card>
                 <CardContent class="text-center py-6">
                     <h2 class="text-2xl font-bold mb-4">
                         Workout Complete! 🎉
                     </h2>
-                    <Button on:click={() => (activeWorkout = null)}>
-                        Finish
-                    </Button>
+                    <p class="text-lg mb-4">
+                        Total time: {formatTime(workoutDuration)}
+                    </p>
+                    <Button on:click={finishWorkout}>Finish</Button>
                 </CardContent>
             </Card>
         {/if}
