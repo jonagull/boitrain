@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model WorkoutDay {
+  id        Int        @id @default(autoincrement())
+  name      String     // e.g., "Day 1 - Upper Body Strength"
+  exercises Exercise[]
+}
+
+model Exercise {
+  id           Int         @id @default(autoincrement())
+  name         String
+  sets         Int?
+  reps         String?     // "8-12" or null if using duration
+  duration     String?     // "30-60 seconds" or null if using reps
+  checked      Boolean     @default(false)
+  workoutDay   WorkoutDay  @relation(fields: [workoutDayId], references: [id])
+  workoutDayId Int
+  progressions Progression[]
+}
+
+model Progression {
+  id         Int      @id @default(autoincrement())
+  name       String
+  order      Int      // To maintain the progression order
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  exerciseId Int
+}
