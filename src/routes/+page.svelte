@@ -1,11 +1,14 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import {
+        Card,
+        CardContent,
+        CardHeader,
+        CardTitle,
+    } from "@/components/ui/card/index.js";
+    import { Checkbox } from "@/components/ui/checkbox/index.js";
+    import { Separator } from "@/components/ui/separator/index.js";
 
-    export let data; // SvelteKit injects `data` from +page.ts
-
-    onMount(async () => {
-        console.log(data);
-    });
+    export let data;
 
     async function toggleExercise(id: number, checked: boolean) {
         await fetch("/api/exercises", {
@@ -14,11 +17,10 @@
             body: JSON.stringify({ id, checked }),
         });
 
-        // Update the exercise locally
         data.workoutDays = data.workoutDays.map(
-            (day: { exercises: any[] }) => ({
+            (day: { exercises: { id: number }[] }) => ({
                 ...day,
-                exercises: day.exercises.map((ex) =>
+                exercises: day.exercises.map((ex: { id: number }) =>
                     ex.id === id ? { ...ex, checked } : ex
                 ),
             })
@@ -26,85 +28,72 @@
     }
 </script>
 
-<h1>Workout Program</h1>
+<div class="container mx-auto p-4 max-w-4xl">
+    <h1 class="text-4xl font-bold mb-8 text-center">Workout Program</h1>
 
-{#each data.workoutDays as workoutDay}
-    <section class="workout-day">
-        <h2>{workoutDay.name}</h2>
-        <ul>
-            {#each workoutDay.exercises as exercise}
-                <li>
-                    <div class="exercise-header">
-                        <input
-                            type="checkbox"
-                            checked={exercise.checked}
-                            on:change={() =>
-                                toggleExercise(exercise.id, !exercise.checked)}
-                        />
-                        <strong>{exercise.name}</strong>
-                        {#if exercise.sets && exercise.reps}
-                            <span>{exercise.sets} sets × {exercise.reps}</span>
-                        {:else if exercise.duration}
-                            <span>{exercise.duration}</span>
-                        {/if}
+    <div class="grid gap-6">
+        {#each data.workoutDays as workoutDay}
+            <Card>
+                <CardHeader>
+                    <CardTitle>{workoutDay.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div class="space-y-4">
+                        {#each workoutDay.exercises as exercise}
+                            <div class="bg-secondary/20 rounded-lg p-4">
+                                <div class="flex items-center gap-4">
+                                    <Checkbox
+                                        checked={exercise.checked}
+                                        onCheckedChange={(value) =>
+                                            toggleExercise(
+                                                exercise.id,
+                                                value === true
+                                            )}
+                                    />
+                                    <div class="flex-1">
+                                        <h3 class="font-semibold">
+                                            {exercise.name}
+                                        </h3>
+                                        {#if exercise.sets && exercise.reps}
+                                            <p
+                                                class="text-sm text-muted-foreground"
+                                            >
+                                                {exercise.sets} sets × {exercise.reps}
+                                            </p>
+                                        {:else if exercise.duration}
+                                            <p
+                                                class="text-sm text-muted-foreground"
+                                            >
+                                                {exercise.duration}
+                                            </p>
+                                        {/if}
+                                    </div>
+                                </div>
+
+                                {#if exercise.progressions?.length}
+                                    <div class="mt-3">
+                                        <Separator class="my-2" />
+                                        <p class="text-sm font-medium mb-2">
+                                            Progressions:
+                                        </p>
+                                        <ol
+                                            class="list-decimal list-inside space-y-1"
+                                        >
+                                            {#each exercise.progressions as progression}
+                                                <li
+                                                    class="text-sm text-muted-foreground"
+                                                >
+                                                    {progression.name}
+                                                </li>
+                                            {/each}
+                                        </ol>
+                                    </div>
+                                {/if}
+                            </div>
+                        {/each}
                     </div>
-
-                    <div class="progressions">
-                        <small>Progressions:</small>
-                        <ol>
-                            {#each exercise.progressions as progression}
-                                <li>{progression.name}</li>
-                            {/each}
-                        </ol>
-                    </div>
-                </li>
-            {/each}
-        </ul>
-    </section>
-{/each}
-
-<style>
-    .workout-day {
-        margin-bottom: 2rem;
-        padding: 1rem;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-    }
-
-    h2 {
-        margin-top: 0;
-        color: #2c3e50;
-    }
-
-    ul {
-        list-style: none;
-        padding: 0;
-    }
-
-    li {
-        margin-bottom: 1rem;
-        padding: 1rem;
-        background: #f8f9fa;
-        border-radius: 4px;
-    }
-
-    .exercise-header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .progressions {
-        margin-left: 2rem;
-        font-size: 0.9rem;
-    }
-
-    .progressions ol {
-        margin-top: 0.25rem;
-    }
-
-    small {
-        color: #666;
-    }
-</style>
+                </CardContent>
+            </Card>
+        {/each}
+    </div>
+</div>
