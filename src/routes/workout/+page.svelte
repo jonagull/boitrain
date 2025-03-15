@@ -88,8 +88,19 @@
         return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")}`;
     }
 
-    function finishWorkout() {
+    async function finishWorkout() {
         if (workoutTimer) clearInterval(workoutTimer);
+
+        // Save workout to history
+        await fetch("/api/workouts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                workoutDayId: activeWorkout.id,
+                duration: workoutDuration,
+            }),
+        });
+
         activeWorkout = null;
         workoutDuration = 0;
     }

@@ -13,6 +13,18 @@
             >
                 Workout
             </a>
+            <a
+                href="/history"
+                class="text-sm font-medium hover:text-primary transition-colors"
+            >
+                History
+            </a>
+            <a
+                href="/tree"
+                class="text-sm font-medium hover:text-primary transition-colors"
+            >
+                Tree
+            </a>
         </nav>
     </div>
 </header>

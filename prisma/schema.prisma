@@ -10,10 +10,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum WorkoutCategory {
+    STRENGTH
+    CARDIO
+    FLEXIBILITY
+}
+
 model WorkoutDay {
   id        Int        @id @default(autoincrement())
   name      String     // e.g., "Day 1 - Upper Body Strength"
+  category  WorkoutCategory @default(STRENGTH)
   exercises Exercise[]
+  history   WorkoutHistory[]
 }
 
 model Exercise {
@@ -34,4 +42,13 @@ model Progression {
   order      Int      // To maintain the progression order
   exercise   Exercise @relation(fields: [exerciseId], references: [id])
   exerciseId Int
+}
+
+model WorkoutHistory {
+  id          Int       @id @default(autoincrement())
+  workoutDayId Int
+  workoutDay  WorkoutDay @relation(fields: [workoutDayId], references: [id])
+  date        DateTime  @default(now())
+  duration    Int       // Duration in seconds
+  notes       String?
 }
